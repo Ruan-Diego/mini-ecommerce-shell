@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/bootstrap.tsx","./src/eventBus.test.ts","./src/eventBus.ts","./src/main.tsx","./src/test-setup.ts","./src/federation/RemoteBoundary.test.tsx","./src/federation/RemoteBoundary.tsx","./src/federation/props.ts","./src/federation/remotes.d.ts","./src/layout/Footer.tsx","./src/layout/Header.tsx","./vite.config.ts"],"version":"5.9.3"}
