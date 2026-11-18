@@ -3,6 +3,8 @@ import { Component, Suspense, type ReactNode } from 'react';
 interface Props {
   nome: string;
   children: ReactNode;
+  /** Chamado em "Tentar de novo". Sem ele, o boundary só zera o próprio estado. */
+  onTentarDeNovo?: () => void;
 }
 
 interface State {
@@ -28,7 +30,7 @@ export class RemoteBoundary extends Component<Props, State> {
           <p className="eyebrow">{this.props.nome}</p>
           <h2>Esta parte da loja está indisponível</h2>
           <p className="muted">O resto da página continua funcionando. Tente de novo em instantes.</p>
-          <button className="btn btn-sec" type="button" onClick={() => this.setState({ erro: false })}>
+          <button className="btn btn-sec" type="button" onClick={() => (this.props.onTentarDeNovo ? this.props.onTentarDeNovo() : this.setState({ erro: false }))}>
             Tentar de novo
           </button>
         </section>

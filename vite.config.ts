@@ -1,37 +1,60 @@
-import { loadEnv } from 'vite';
+import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { federation } from '@module-federation/vite';
+import { manifestoDoAmbiente } from './src/federation/manifesto';
 
-const remotos = ['catalogo', 'carrinho', 'checkout', 'conta', 'admin'] as const;
-const portas: Record<(typeof remotos)[number], number> = { catalogo: 5174, carrinho: 5175, checkout: 5176, conta: 5177, admin: 5178 };
-
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
-  const remotes = Object.fromEntries(
-    remotos.map((r) => {
-      const nome = `mfe_${r}`;
-      const entry = env[`VITE_REMOTE_${r.toUpperCase()}`] ?? `http://localhost:${portas[r]}/remoteEntry.js`;
-      return [nome, { type: 'module', name: nome, entry, entryGlobalName: nome, shareScope: 'default' }];
-    }),
-  );
-
+/**
+ * Publica /remotes.json, que o shell lê em runtime para saber de onde carregar cada MFE.
+ * - dev: gerado a cada requisição a partir de VITE_REMOTE_<NOME> (editar o .env vale no próximo F5);
+ * - build: vira dist/remotes.json com os valores do momento do build. Para trocar a versão de um
+ *   MFE em produção, edite esse arquivo publicado; não é preciso rebuild.
+ */
+function manifestoDeRemotos(): Plugin {
+  let modo = 'development';
+  const ler = () => JSON.stringify(manifestoDoAmbiente(loadEnv(modo, process.cwd(), 'VITE_REMOTE_')), null, 2);
   return {
-    plugins: [
-      react(),
-      federation({
-        name: 'shell',
-        remotes,
-        shared: {
-          react: { singleton: true },
-          'react-dom': { singleton: true },
-          'react-router-dom': { singleton: true },
-        },
-      }),
-    ],
-    server: { port: 5173, strictPort: true },
-    preview: { port: 5173, strictPort: true },
-    build: { target: 'chrome89' },
-    test: { environment: 'jsdom', globals: true, setupFiles: ['./src/test-setup.ts'] },
+    name: 'mini:manifesto-de-remotos',
+    configResolved(config) {
+      modo = config.mode;
+    },
+    configureServer(server) {
+      server.middlewares.use('/remotes.json', (_req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(ler());
+      });
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'remotes.json', source: ler() });
+    },
   };
+}
+
+export default defineConfig({
+  plugins: [
+    react(),
+    manifestoDeRemotos(),
+    // Sem remotos estáticos: eles são registrados em runtime (src/federation/remotos.ts).
+    federation({
+      name: 'shell',
+      remotes: {},
+      shared: {
+        react: { singleton: true },
+        'react-dom': { singleton: true },
+        'react-router-dom': { singleton: true },
+      },
+    }),
+  ],
+  server: { port: 5173, strictPort: true },
+  preview: { port: 5173, strictPort: true },
+  build: { target: 'chrome89' },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test-setup.ts'],
+    // O design-system 0.2.0 tem imports sem ".js" no dist, que o Node ESM não resolve.
+    // Processar os pacotes @ruan-diego pelo Vite contorna isso; pode sair quando o shell usar o 0.2.1.
+    server: { deps: { inline: [/@ruan-diego\//] } },
+  },
 });
