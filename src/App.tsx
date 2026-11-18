@@ -3,7 +3,7 @@ import { Route, Routes, useNavigate } from 'react-router-dom';
 import { Header } from './layout/Header';
 import { Footer } from './layout/Footer';
 import { Remoto } from './federation/Remoto';
-import type { PropsRemoto } from './federation/props';
+import type { PropsRemoto } from '@ruan-diego/mini-event-contracts';
 import { eventBus } from './eventBus';
 
 // Autenticação OIDC entra na Fase 3 (issue "Login OIDC com Keycloak").

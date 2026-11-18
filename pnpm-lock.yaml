@@ -11,6 +11,12 @@ importers:
       '@module-federation/runtime':
         specifier: 2.9.3
         version: 2.9.3
+      '@ruan-diego/mini-design-system':
+        specifier: 0.2.0
+        version: 0.2.0(react@19.3.1)
+      '@ruan-diego/mini-event-contracts':
+        specifier: 0.2.0
+        version: 0.2.0
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -409,6 +415,14 @@ packages:
 
   '@rolldown/pluginutils@1.1.1':
     resolution: {integrity: sha512-glFIJDvLNDtJhT9qrMFWLPbvS+skxgt4L0K8Ei2YtnhPysAJnsI7nyxSJxKj4ADeKX0OLjC4ntRkwpLOoS3rwA==}
+
+  '@ruan-diego/mini-design-system@0.2.0':
+    resolution: {integrity: sha512-9Xzk4sVzzrYRtLd4Js5tw/SPT1gWqSg4L0Vcu8jUi+C7CYrL2OYtJ1unQL8SiVSzR6pH5zIbsnmf0Iw3ElhPAQ==, tarball: https://npm.pkg.github.com/download/@ruan-diego/mini-design-system/0.2.0/ff5ae28d9a56110869ded48ff66194c001ff7f50}
+    peerDependencies:
+      react: ^19.0.0
+
+  '@ruan-diego/mini-event-contracts@0.2.0':
+    resolution: {integrity: sha512-CS5+zM8BDMhvmBiO7DLYWVbD0BWNx8OV81FLAe/5lZriOJl4iaJq3huo0IRu1ZGq9E+zNtiZkZugj0VYXGnkPg==, tarball: https://npm.pkg.github.com/download/@ruan-diego/mini-event-contracts/0.2.0/90ce6557d9f9f8db1d2b763d4d5668cd7a579dca}
 
   '@testing-library/dom@10.4.2':
     resolution: {integrity: sha512-yzr2S9HyAIdhz2/6qHgbs665Q7PKVcDF05vsOlHPxG1mo36gKVesdYVeDLnXgfjJ03CrKRk08knc6+E/9m8v2Q==}
@@ -2138,6 +2152,12 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.1.1': {}
+
+  '@ruan-diego/mini-design-system@0.2.0(react@19.3.1)':
+    dependencies:
+      react: 19.3.1
+
+  '@ruan-diego/mini-event-contracts@0.2.0': {}
 
   '@testing-library/dom@10.4.2':
     dependencies:

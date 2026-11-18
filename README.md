@@ -31,10 +31,12 @@ O shell não conhece os remotos no build. Ao iniciar, ele lê `/remotes.json` e 
 ## Contrato com os microfrontends
 
 - Cada MFE expõe `./App`, que recebe `{ basePath, getToken, eventBus }`.
-- Os MFEs só se falam por eventos (`src/eventBus.ts`, depois `@ruan-diego/mini-event-contracts`).
+- Os MFEs só se falam por eventos (tipos e `criarEventBus` de `@ruan-diego/mini-event-contracts`; o bus único fica em `src/eventBus.ts`).
 - Cada remoto roda dentro de um `RemoteBoundary`: se ele falhar, só a área dele mostra "Esta parte da loja está indisponível".
 
 ## Rodando
+
+Os pacotes `@ruan-diego/mini-design-system` e `@ruan-diego/mini-event-contracts` vêm do GitHub Packages, que exige token até para ler. Uma vez: `gh auth refresh -h github.com -s read:packages` e, no seu `~/.npmrc`, a linha `//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}`. Antes do install, no PowerShell: `$env:GITHUB_TOKEN = gh auth token`. Detalhes no README do [mini-ecommerce-ui](https://github.com/Ruan-Diego/mini-ecommerce-ui#consumindo-nos-microfrontends).
 
 ```bash
 cp .env.example .env

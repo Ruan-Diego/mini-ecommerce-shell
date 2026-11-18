@@ -7,6 +7,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Ler os pacotes @ruan-diego do GitHub Packages.
+permissions:
+  contents: read
+  packages: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -23,7 +28,12 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          # Cria um .npmrc de usuário que lê NODE_AUTH_TOKEN (o pnpm não expande token no .npmrc do projeto).
+          registry-url: https://npm.pkg.github.com
+          scope: "@ruan-diego"
       - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

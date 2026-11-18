@@ -1,7 +1,7 @@
 import { lazy, type ComponentType } from 'react';
 import { loadRemote, registerRemotes } from '@module-federation/runtime';
 import { validarManifesto, type Manifesto, type NomeRemoto } from './manifesto';
-import type { PropsRemoto } from './props';
+import type { PropsRemoto } from '@ruan-diego/mini-event-contracts';
 
 const nomeFederation = (nome: NomeRemoto) => `mfe_${nome}`;
 

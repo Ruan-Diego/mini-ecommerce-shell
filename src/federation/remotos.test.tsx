@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { loadRemote, registerRemotes } from '@module-federation/runtime';
 import { buscarManifesto, carregarApp, iniciarRemotos, registrarRemotos } from './remotos';
 import { RemoteBoundary } from './RemoteBoundary';
-import { criarEventBus } from '../eventBus';
+import { criarEventBus } from '@ruan-diego/mini-event-contracts';
 
 vi.mock('@module-federation/runtime', () => ({ loadRemote: vi.fn(), registerRemotes: vi.fn() }));
 

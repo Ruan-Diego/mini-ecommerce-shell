@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { RemoteBoundary } from './RemoteBoundary';
 import { carregarApp } from './remotos';
 import type { NomeRemoto } from './manifesto';
-import type { PropsRemoto } from './props';
+import type { PropsRemoto } from '@ruan-diego/mini-event-contracts';
 
 interface Props {
   nome: NomeRemoto;

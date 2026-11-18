@@ -49,5 +49,12 @@ export default defineConfig({
   server: { port: 5173, strictPort: true },
   preview: { port: 5173, strictPort: true },
   build: { target: 'chrome89' },
-  test: { environment: 'jsdom', globals: true, setupFiles: ['./src/test-setup.ts'] },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test-setup.ts'],
+    // O design-system 0.2.0 tem imports sem ".js" no dist, que o Node ESM não resolve.
+    // Processar os pacotes @ruan-diego pelo Vite contorna isso; pode sair quando o shell usar o 0.2.1.
+    server: { deps: { inline: [/@ruan-diego\//] } },
+  },
 });

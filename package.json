@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@module-federation/runtime": "2.9.3",
+    "@ruan-diego/mini-design-system": "0.2.0",
+    "@ruan-diego/mini-event-contracts": "0.2.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.6"
