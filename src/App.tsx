@@ -1,16 +1,17 @@
-import { lazy, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Header } from './layout/Header';
 import { Footer } from './layout/Footer';
 import { RemoteBoundary } from './federation/RemoteBoundary';
 import type { PropsRemoto } from './federation/props';
 import { eventBus } from './eventBus';
+import { carregarApp } from './federation/remotos';
 
-const Catalogo = lazy(() => import('mfe_catalogo/App'));
-const Carrinho = lazy(() => import('mfe_carrinho/App'));
-const Checkout = lazy(() => import('mfe_checkout/App'));
-const Conta = lazy(() => import('mfe_conta/App'));
-const Admin = lazy(() => import('mfe_admin/App'));
+const Catalogo = carregarApp('catalogo');
+const Carrinho = carregarApp('carrinho');
+const Checkout = carregarApp('checkout');
+const Conta = carregarApp('conta');
+const Admin = carregarApp('admin');
 
 // Autenticação OIDC entra na Fase 3 (issue "Login OIDC com Keycloak").
 const getToken = async () => null;

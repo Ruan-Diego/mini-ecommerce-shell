@@ -14,7 +14,19 @@ React 19 · TypeScript · Vite · `@module-federation/vite` · React Router 7
 | `/conta/*` | [mfe-conta](https://github.com/Ruan-Diego/mini-ecommerce-mfe-conta) | 5177 |
 | `/admin/*` | [mfe-admin](https://github.com/Ruan-Diego/mini-ecommerce-mfe-admin) | 5178 |
 
-A URL de cada remoto vem de `VITE_REMOTE_<NOME>` (veja `.env.example`), então dá para apontar para outra versão de um MFE sem mexer no código do shell.
+### De onde vem cada remoto (sem rebuild)
+
+O shell não conhece os remotos no build. Ao iniciar, ele lê `/remotes.json` e registra cada MFE no runtime do Module Federation (`src/federation/remotos.ts`):
+
+```json
+{ "catalogo": "http://localhost:5174/remoteEntry.js", "carrinho": "http://localhost:5175/remoteEntry.js" }
+```
+
+- **`pnpm dev`:** o JSON é montado a cada requisição a partir de `VITE_REMOTE_<NOME>` no `.env` (veja `.env.example`). Basta editar o `.env` e dar F5.
+- **`pnpm build`:** gera `dist/remotes.json` com os valores do momento. Para apontar o shell publicado para outra versão de um MFE, edite esse arquivo no servidor. Não precisa de rebuild.
+- Se o manifesto ou um remoto estiver fora do ar, o shell sobe com header e footer, e só a área do MFE mostra o aviso.
+
+`react`, `react-dom` e `react-router-dom` são `shared` singleton: shell e MFEs usam a mesma instância.
 
 ## Contrato com os microfrontends
 
@@ -33,6 +45,8 @@ pnpm dev                       # http://localhost:5173
 Em cada MFE que quiser ver integrado: `pnpm build && pnpm preview`.
 
 ```bash
+pnpm lint        # ESLint com typescript-eslint, react-hooks e jsx-a11y
+pnpm typecheck
 pnpm test
 pnpm build
 ```
