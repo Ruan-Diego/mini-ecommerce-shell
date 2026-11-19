@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { loadRemote } from '@module-federation/runtime';
 import { App } from './App';
 import { eventBus } from './eventBus';
@@ -97,6 +97,31 @@ describe('App', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Buscar' }), 'esfera azul{Enter}');
     expect(local).toBe('/produtos?busca=esfera%20azul');
     expect(await screen.findByText('mfe catalogo em /')).toBeInTheDocument();
+  });
+
+  // Regressão: o remoto tem <Routes> próprias, relativas ao basePath. Um remoto simulado sem roteamento
+  // não percebe se o shell consome o prefixo da URL (foi o que escondeu o bug de /produtos mostrar a Home).
+  it.each([
+    ['/', 'home'],
+    ['/produtos', 'listagem'],
+    ['/produtos/esfera-aurora', 'detalhe esfera-aurora'],
+  ])('o roteamento interno do catálogo resolve %s para a tela %s', async (rota, tela) => {
+    vi.mocked(loadRemote).mockImplementation(async () => ({
+      default: function CatalogoComRotas() {
+        return (
+          <Routes>
+            <Route index element={<p>tela home</p>} />
+            <Route path="produtos" element={<p>tela listagem</p>} />
+            <Route path="produtos/:slug" element={<Detalhe />} />
+          </Routes>
+        );
+      },
+    }));
+    function Detalhe() {
+      return <p>tela detalhe {useParams().slug}</p>;
+    }
+    renderizar(rota);
+    expect(await screen.findByText(`tela ${tela}`)).toBeInTheDocument();
   });
 
   it('rota desconhecida não monta nenhum microfrontend', async () => {
