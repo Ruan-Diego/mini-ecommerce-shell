@@ -39,7 +39,29 @@ export function App() {
         </Routes>
       </main>
       <Footer />
+      <DrawerDoCarrinho />
     </div>
+  );
+}
+
+/**
+ * Mini-carrinho (drawer), montado em toda página, fora do <main>: ele precisa estar ouvindo
+ * `carrinho:adicionar-item` e `carrinho:abrir` mesmo quando o cliente está no catálogo.
+ *
+ * O mfe-carrinho expõe um só ./App, com as rotas relativas ao basePath: `index` é a página do carrinho e
+ * `mini` é o drawer. Esta instância é a do drawer: `<Routes location>` faz o MFE enxergar `/carrinho/mini`
+ * (e não a URL real do navegador), então ela só renderiza o drawer, enquanto a rota `/carrinho/*` do
+ * <main> monta outra instância, que mostra a página. Cada tela existe em uma instância só, e nenhum
+ * evento é tratado em dobro.
+ *
+ * `silencioso`: se o mfe-carrinho estiver fora do ar, o drawer some sem aviso nem esqueleto em todas as
+ * páginas; o aviso aparece só na rota /carrinho. O badge continua funcionando (ele é do shell).
+ */
+function DrawerDoCarrinho() {
+  return (
+    <Routes location="/carrinho/mini">
+      <Route path="/carrinho/*" element={<Remoto key="mini-carrinho" nome="carrinho" props={props('/carrinho')} silencioso />} />
+    </Routes>
   );
 }
 
