@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { loadRemote } from '@module-federation/runtime';
 import { App } from './App';
 import { eventBus } from './eventBus';
@@ -71,6 +71,39 @@ describe('App', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
     expect(await screen.findByText('mfe catalogo em /')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  // Shell #3: as três telas do catálogo abrem dentro do shell.
+  it.each(['/', '/produtos', '/produtos/esfera-aurora'])('a rota %s abre o mfe-catalogo', async (rota) => {
+    remotosNoAr('catalogo');
+    renderizar(rota);
+    expect(await screen.findByText('mfe catalogo em /')).toBeInTheDocument();
+  });
+
+  it('a busca do header leva para /produtos?busca=', async () => {
+    remotosNoAr('catalogo');
+    let local = '';
+    function Local() {
+      const l = useLocation();
+      local = l.pathname + l.search;
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+        <Local />
+      </MemoryRouter>,
+    );
+    await userEvent.type(screen.getByRole('textbox', { name: 'Buscar' }), 'esfera azul{Enter}');
+    expect(local).toBe('/produtos?busca=esfera%20azul');
+    expect(await screen.findByText('mfe catalogo em /')).toBeInTheDocument();
+  });
+
+  it('rota desconhecida não monta nenhum microfrontend', async () => {
+    remotosNoAr('catalogo');
+    renderizar('/qualquer-coisa');
+    expect(await screen.findByText('Página não encontrada.')).toBeInTheDocument();
+    expect(loadRemote).not.toHaveBeenCalled();
   });
 
   it('atualiza o badge e anuncia o carrinho com carrinho:atualizado e carrinho:limpo', async () => {

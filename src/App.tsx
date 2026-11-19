@@ -32,7 +32,11 @@ export function App() {
           <Route path="/checkout/*" element={<Remoto key="checkout" nome="checkout" props={props('/checkout')} />} />
           <Route path="/conta/*" element={<Remoto key="conta" nome="conta" props={props('/conta')} />} />
           <Route path="/admin/*" element={<Remoto key="admin" nome="admin" props={props('/admin')} />} />
-          <Route path="/*" element={<Remoto key="catalogo" nome="catalogo" props={props('/')} />} />
+          {/* O catálogo é dono de /, /produtos e /produtos/:slug. O basePath '/' faz o MFE resolver
+              as rotas relativas a partir da raiz; rotas desconhecidas caem no 404 do shell. */}
+          <Route path="/" element={<Remoto key="catalogo" nome="catalogo" props={props('/')} />} />
+          <Route path="/produtos/*" element={<Remoto key="catalogo" nome="catalogo" props={props('/')} />} />
+          <Route path="*" element={<p className="wrap muted">Página não encontrada.</p>} />
         </Routes>
       </main>
       <Footer />
