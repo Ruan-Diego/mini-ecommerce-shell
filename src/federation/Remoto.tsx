@@ -7,6 +7,8 @@ import type { PropsRemoto } from '@ruan-diego/mini-event-contracts';
 interface Props {
   nome: NomeRemoto;
   props: PropsRemoto;
+  /** Parte montada em toda página: se falhar, some sem aviso (ver RemoteBoundary). */
+  silencioso?: boolean;
 }
 
 /**
@@ -16,7 +18,7 @@ interface Props {
  * componente lazy re-lança o mesmo erro para sempre. Por isso cada "Tentar de novo" cria um
  * componente lazy novo (nova chamada ao loadRemote) e uma key nova para zerar o boundary.
  */
-export function Remoto({ nome, props }: Props) {
+export function Remoto({ nome, props, silencioso }: Props) {
   const [tentativa, setTentativa] = useState(0);
   const [App, setApp] = useState(() => carregarApp(nome));
 
@@ -26,7 +28,7 @@ export function Remoto({ nome, props }: Props) {
   }
 
   return (
-    <RemoteBoundary key={tentativa} nome={`mfe-${nome}`} onTentarDeNovo={tentarDeNovo}>
+    <RemoteBoundary key={tentativa} nome={`mfe-${nome}`} onTentarDeNovo={tentarDeNovo} silencioso={silencioso}>
       <App {...props} />
     </RemoteBoundary>
   );

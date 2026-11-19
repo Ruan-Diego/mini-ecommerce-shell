@@ -5,6 +5,11 @@ interface Props {
   children: ReactNode;
   /** Chamado em "Tentar de novo". Sem ele, o boundary só zera o próprio estado. */
   onTentarDeNovo?: () => void;
+  /**
+   * Para partes que ficam montadas em toda página (ex.: o drawer do carrinho): se falharem, não mostram
+   * aviso nem esqueleto de carregamento, só registram o erro no console. O aviso fica para a rota do MFE.
+   */
+  silencioso?: boolean;
 }
 
 interface State {
@@ -25,6 +30,7 @@ export class RemoteBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.erro) {
+      if (this.props.silencioso) return null;
       return (
         <section className="remoto-indisponivel" role="alert">
           <p className="eyebrow">{this.props.nome}</p>
@@ -36,6 +42,7 @@ export class RemoteBoundary extends Component<Props, State> {
         </section>
       );
     }
-    return <Suspense fallback={<div className="skeleton" aria-busy="true" aria-label="Carregando" />}>{this.props.children}</Suspense>;
+    const carregando = this.props.silencioso ? null : <div className="skeleton" aria-busy="true" aria-label="Carregando" />;
+    return <Suspense fallback={carregando}>{this.props.children}</Suspense>;
   }
 }
