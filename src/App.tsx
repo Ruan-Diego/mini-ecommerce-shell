@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './layout/Header';
 import { Footer } from './layout/Footer';
 import { Remoto } from './federation/Remoto';
@@ -32,14 +32,22 @@ export function App() {
           <Route path="/checkout/*" element={<Remoto key="checkout" nome="checkout" props={props('/checkout')} />} />
           <Route path="/conta/*" element={<Remoto key="conta" nome="conta" props={props('/conta')} />} />
           <Route path="/admin/*" element={<Remoto key="admin" nome="admin" props={props('/admin')} />} />
-          {/* O catálogo é dono de /, /produtos e /produtos/:slug. O basePath '/' faz o MFE resolver
-              as rotas relativas a partir da raiz; rotas desconhecidas caem no 404 do shell. */}
-          <Route path="/" element={<Remoto key="catalogo" nome="catalogo" props={props('/')} />} />
-          <Route path="/produtos/*" element={<Remoto key="catalogo" nome="catalogo" props={props('/')} />} />
-          <Route path="*" element={<p className="wrap muted">Página não encontrada.</p>} />
+          {/* O catálogo é dono de /, /produtos e /produtos/:slug, e o MFE tem as próprias rotas relativas
+              ao basePath '/'. Por isso a rota do shell é "*" (que não consome nenhum prefixo): com
+              "/produtos/*" o shell consumiria "/produtos" e o MFE veria o caminho vazio (a Home). */}
+          <Route path="*" element={<RotaDoCatalogo />} />
         </Routes>
       </main>
       <Footer />
     </div>
   );
+}
+
+const ehDoCatalogo = (pathname: string) => pathname === '/' || pathname === '/produtos' || pathname.startsWith('/produtos/');
+
+/** Monta o catálogo só nas rotas dele; qualquer outra rota desconhecida é 404 do shell. */
+function RotaDoCatalogo() {
+  const { pathname } = useLocation();
+  if (!ehDoCatalogo(pathname)) return <p className="wrap muted">Página não encontrada.</p>;
+  return <Remoto key="catalogo" nome="catalogo" props={props('/')} />;
 }
