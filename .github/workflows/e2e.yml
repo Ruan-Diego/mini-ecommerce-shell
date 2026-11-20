@@ -1,0 +1,107 @@
+name: E2E
+
+# ADR-0004: só roda em PR para main (fim de cada fase) ou manualmente. Não adicione gatilho de push nem de PR
+# para dev/feat: a cota de Actions é limitada. Este job é o mais pesado do projeto (sobe a stack inteira).
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch dos outros repositórios (backend e MFEs)
+        default: dev
+
+# Ler os pacotes @ruan-diego do GitHub Packages.
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # Os repositórios ficam lado a lado em $GITHUB_WORKSPACE, como na máquina local (MINI_ROOT do subir.mjs).
+      MINI_ROOT: ${{ github.workspace }}
+      REF_DOS_OUTROS: ${{ inputs.ref || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mini-ecommerce-shell
+      - uses: actions/checkout@v4
+        with:
+          repository: Ruan-Diego/mini-ecommerce-backend
+          ref: ${{ env.REF_DOS_OUTROS }}
+          path: mini-ecommerce-backend
+      - uses: actions/checkout@v4
+        with:
+          repository: Ruan-Diego/mini-ecommerce-mfe-catalogo
+          ref: ${{ env.REF_DOS_OUTROS }}
+          path: mini-ecommerce-mfe-catalogo
+      - uses: actions/checkout@v4
+        with:
+          repository: Ruan-Diego/mini-ecommerce-mfe-carrinho
+          ref: ${{ env.REF_DOS_OUTROS }}
+          path: mini-ecommerce-mfe-carrinho
+      - uses: actions/checkout@v4
+        with:
+          repository: Ruan-Diego/mini-ecommerce-mfe-checkout
+          ref: ${{ env.REF_DOS_OUTROS }}
+          path: mini-ecommerce-mfe-checkout
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # .npmrc de usuário que lê NODE_AUTH_TOKEN (o pnpm não expande token no .npmrc do projeto).
+          registry-url: https://npm.pkg.github.com
+          scope: "@ruan-diego"
+
+      - name: Instala as dependências dos 4 frontends
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for repo in shell mfe-catalogo mfe-carrinho mfe-checkout; do
+            (cd "mini-ecommerce-$repo" && pnpm install --frozen-lockfile)
+          done
+
+      - name: Instala o Chromium do Playwright
+        working-directory: mini-ecommerce-shell
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Sobe a stack (infra, serviços, gateway, MFEs e shell)
+        working-directory: mini-ecommerce-shell
+        run: node e2e/stack/subir.mjs
+
+      - name: Testes de ponta a ponta
+        working-directory: mini-ecommerce-shell
+        run: pnpm e2e
+
+      - name: Logs da stack (se falhou)
+        if: failure()
+        working-directory: mini-ecommerce-shell
+        run: tail -n 80 e2e/.stack/*.log || true
+
+      - name: Relatório do Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            mini-ecommerce-shell/e2e/playwright-report
+            mini-ecommerce-shell/e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7
