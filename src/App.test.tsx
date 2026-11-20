@@ -6,6 +6,8 @@ import type { PropsRemoto } from '@ruan-diego/mini-event-contracts';
 import { loadRemote } from '@module-federation/runtime';
 import { App } from './App';
 import { eventBus } from './eventBus';
+import { definirCliente } from './auth';
+import { criarClienteFalso, logado } from './auth/clienteFalso';
 
 vi.mock('@module-federation/runtime', () => ({ loadRemote: vi.fn(), registerRemotes: vi.fn() }));
 
@@ -28,6 +30,8 @@ function renderizar(rota = '/') {
 
 beforeEach(() => {
   vi.mocked(loadRemote).mockReset();
+  // Por padrão há um cliente logado; os testes de login trocam por outro.
+  definirCliente(criarClienteFalso(logado()));
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -240,5 +244,70 @@ describe('Carrinho no shell', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'comprar no catálogo' }));
     expect(await screen.findByRole('button', { name: 'Carrinho, 2 itens' })).toHaveTextContent('2');
     expect(screen.getByText('Carrinho com 2 itens')).toBeInTheDocument();
+  });
+});
+
+// Shell #5: login OIDC e rotas protegidas.
+describe('Login', () => {
+  it.each(['/checkout/endereco', '/conta/pedidos'])('sem login, %s leva ao Keycloak com a rota de retorno e não monta o MFE', async (rota) => {
+    remotosNoAr('checkout', 'conta');
+    const falso = criarClienteFalso();
+    definirCliente(falso);
+    renderizar(rota);
+    expect(await screen.findByText('Redirecionando para o login…')).toBeInTheDocument();
+    await waitFor(() => expect(falso.iniciarLogin).toHaveBeenCalledWith(rota));
+    expect(screen.queryByText(/^mfe (checkout|conta)/)).not.toBeInTheDocument();
+  });
+
+  it('logado, /checkout abre o MFE sem ir ao Keycloak', async () => {
+    remotosNoAr('checkout');
+    const falso = criarClienteFalso(logado());
+    definirCliente(falso);
+    renderizar('/checkout/endereco');
+    expect(await screen.findByText('mfe checkout em /checkout')).toBeInTheDocument();
+    expect(falso.iniciarLogin).not.toHaveBeenCalled();
+  });
+
+  it('/admin com papel cliente mostra "Acesso negado" e não monta o MFE', async () => {
+    remotosNoAr('admin');
+    definirCliente(criarClienteFalso(logado(['cliente'])));
+    renderizar('/admin');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Acesso negado');
+    expect(screen.queryByText('mfe admin em /admin')).not.toBeInTheDocument();
+  });
+
+  it('/admin com papel admin abre o MFE', async () => {
+    remotosNoAr('admin');
+    definirCliente(criarClienteFalso(logado(['admin'])));
+    renderizar('/admin');
+    expect(await screen.findByText('mfe admin em /admin')).toBeInTheDocument();
+  });
+
+  it('o header mostra Entrar sem login e nome + Sair com login', async () => {
+    remotosNoAr('catalogo');
+    const falso = criarClienteFalso();
+    definirCliente(falso);
+    renderizar('/');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    expect(falso.iniciarLogin).toHaveBeenCalledWith('/');
+    act(() => falso.mudar(logado(['cliente'], 'Maria')));
+    expect(screen.getByText('Maria')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entrar' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Sair' }));
+    expect(falso.sair).toHaveBeenCalled();
+  });
+
+  it('emite auth:alterado quando o login muda e entrega o getToken do cliente aos MFEs', async () => {
+    remotosNoAr('catalogo');
+    const falso = criarClienteFalso();
+    definirCliente(falso);
+    const ouvido = vi.fn();
+    const parar = eventBus.on('auth:alterado', ouvido);
+    renderizar('/');
+    await screen.findByText('mfe catalogo em /');
+    expect(ouvido).toHaveBeenLastCalledWith({ autenticado: false, nome: undefined, papeis: [] });
+    act(() => falso.mudar(logado(['cliente'], 'Maria')));
+    expect(ouvido).toHaveBeenLastCalledWith({ autenticado: true, nome: 'Maria', papeis: ['cliente'] });
+    parar();
   });
 });

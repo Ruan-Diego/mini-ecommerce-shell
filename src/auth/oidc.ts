@@ -62,6 +62,8 @@ export class ClienteOidc {
   private readonly ouvintes = new Set<() => void>();
   private cancelarRenovacao: (() => void) | null = null;
   private renovacaoEmCurso: Promise<void> | null = null;
+  /** Depois de sair() o navegador já está indo ao logout do Keycloak: nenhum login novo pode atravessar. */
+  private saindo = false;
 
   constructor(private readonly deps: Dependencias) {}
 
@@ -87,6 +89,7 @@ export class ClienteOidc {
 
   /** Leva o navegador ao Keycloak. `retorno` é a rota do shell para onde voltar depois do login. */
   async iniciarLogin(retorno: string): Promise<void> {
+    if (this.saindo) return;
     const verificador = gerarVerificador();
     const state = gerarState();
     const pendente: LoginPendente = { verificador, state, retorno };
@@ -220,6 +223,7 @@ export class ClienteOidc {
 
   /** Apaga a sessão local e encerra a sessão do Keycloak (que também limpa o cookie dele). */
   sair(): void {
+    this.saindo = true;
     const idToken = this.tokens?.id;
     this.limparSessao();
     const parametros = new URLSearchParams({
