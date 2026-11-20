@@ -74,16 +74,35 @@ test('compra com cartão aprovado termina em Pedido confirmado e zera o carrinho
   await expect(badge(page, 0)).toBeVisible(); // carrinho:limpo
 });
 
-test('cartão recusado mostra o motivo e mantém o formulário; trocar de cartão conclui a compra', async ({ page }) => {
+test('cartão recusado cancela o pedido; voltar à loja e refazer a compra com outro cartão conclui', async ({ page }) => {
   await irAtePagamento(page);
   await preencherCartao(page, CARTAO_RECUSADO);
   await page.getByRole('button', { name: /Pagar/ }).click();
 
-  await expect(page.getByRole('alert').filter({ hasText: 'Pagamento recusado' })).toBeVisible();
-  await expect(page).toHaveURL(/\/checkout\/pagamento$/);
-  await expect(page.getByLabel('Nome impresso no cartão')).toHaveValue('ANA SOUZA'); // formulário mantido
+  // Fase 4: pagamento recusado cancela o pedido (e libera o estoque). Não há nova tentativa no mesmo pedido.
+  const alerta = page.getByRole('alert').filter({ hasText: 'Pagamento recusado' });
+  await expect(alerta).toBeVisible();
+  await expect(alerta).toContainText('O pedido foi cancelado');
+  await expect(page.getByRole('button', { name: /Pagar/ })).toHaveCount(0);
 
-  await page.getByLabel('Número do cartão').fill(CARTAO_APROVADO);
+  await page.getByRole('button', { name: 'Voltar à loja' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  // O carrinho do servidor é esvaziado de forma assíncrona (o carrinho-service consome pedido.criado): espera
+  // ele esvaziar antes de montar a compra de novo, senão a limpeza atrasada levaria o item recém-adicionado.
+  await expect(async () => {
+    await page.reload();
+    await expect(badge(page, 0)).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+
+  await adicionarEIrParaOCheckout(page); // já logado: vai direto ao endereço
+  await expect(page).toHaveURL(/\/checkout\/endereco$/);
+  // O endereço da primeira tentativa ficou salvo e já vem selecionado.
+  await expect(page.getByRole('radio', { name: /Ana Souza/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Escolha do frete' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Pagamento' })).toBeVisible();
+  await preencherCartao(page, CARTAO_APROVADO);
   await page.getByRole('button', { name: /Pagar/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Pedido confirmado' })).toBeVisible();
 });
