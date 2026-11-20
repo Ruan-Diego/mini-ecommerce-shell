@@ -5,14 +5,23 @@ import { Footer } from './layout/Footer';
 import { Remoto } from './federation/Remoto';
 import type { PropsRemoto } from '@ruan-diego/mini-event-contracts';
 import { eventBus } from './eventBus';
+import { obterCliente, useAuth } from './auth';
+import { RotaProtegida } from './auth/RotaProtegida';
 
-// Autenticação OIDC entra na Fase 3 (issue "Login OIDC com Keycloak").
-const getToken = async () => null;
+// getToken vem do cliente OIDC (token só em memória, renovado perto de expirar).
+const getToken = () => obterCliente().getToken();
 const props = (basePath: string): PropsRemoto => ({ basePath, getToken, eventBus });
 
 export function App() {
   const navigate = useNavigate();
+  const local = useLocation();
   const [quantidade, setQuantidade] = useState(0);
+  const auth = useAuth();
+
+  // Avisa os MFEs sempre que o login muda (e uma vez ao montar, para quem já nasce sabendo).
+  useEffect(() => {
+    eventBus.emit('auth:alterado', { autenticado: auth.autenticado, nome: auth.usuario?.nome, papeis: auth.usuario?.papeis ?? [] });
+  }, [auth]);
 
   useEffect(() => eventBus.on('carrinho:atualizado', (p) => setQuantidade(p.quantidadeTotal)), []);
   useEffect(() => eventBus.on('carrinho:limpo', () => setQuantidade(0)), []);
@@ -21,7 +30,13 @@ export function App() {
 
   return (
     <div className="app">
-      <Header quantidadeCarrinho={quantidade} onAbrirCarrinho={() => eventBus.emit('carrinho:abrir', {})} />
+      <Header
+        quantidadeCarrinho={quantidade}
+        onAbrirCarrinho={() => eventBus.emit('carrinho:abrir', {})}
+        auth={auth}
+        onEntrar={() => void obterCliente().iniciarLogin(local.pathname + local.search)}
+        onSair={() => obterCliente().sair()}
+      />
       <p className="sr" aria-live="polite">
         {quantidade > 0 ? `Carrinho com ${quantidade} ${quantidade === 1 ? 'item' : 'itens'}` : ''}
       </p>
@@ -29,9 +44,9 @@ export function App() {
         {/* key por MFE: sem ela o React reaproveitaria o mesmo <Remoto> ao trocar de rota. */}
         <Routes>
           <Route path="/carrinho/*" element={<Remoto key="carrinho" nome="carrinho" props={props('/carrinho')} />} />
-          <Route path="/checkout/*" element={<Remoto key="checkout" nome="checkout" props={props('/checkout')} />} />
-          <Route path="/conta/*" element={<Remoto key="conta" nome="conta" props={props('/conta')} />} />
-          <Route path="/admin/*" element={<Remoto key="admin" nome="admin" props={props('/admin')} />} />
+          <Route path="/checkout/*" element={<RotaProtegida><Remoto key="checkout" nome="checkout" props={props('/checkout')} /></RotaProtegida>} />
+          <Route path="/conta/*" element={<RotaProtegida><Remoto key="conta" nome="conta" props={props('/conta')} /></RotaProtegida>} />
+          <Route path="/admin/*" element={<RotaProtegida papel="admin"><Remoto key="admin" nome="admin" props={props('/admin')} /></RotaProtegida>} />
           {/* O catálogo é dono de /, /produtos e /produtos/:slug, e o MFE tem as próprias rotas relativas
               ao basePath '/'. Por isso a rota do shell é "*" (que não consome nenhum prefixo): com
               "/produtos/*" o shell consumiria "/produtos" e o MFE veria o caminho vazio (a Home). */}

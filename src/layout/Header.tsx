@@ -1,14 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
+import type { EstadoAuth } from '../auth/oidc';
 
 interface Props {
   quantidadeCarrinho: number;
   onAbrirCarrinho: () => void;
+  auth: EstadoAuth;
+  onEntrar: () => void;
+  onSair: () => void;
 }
 
 const categorias = ['Esferas', 'Anéis', 'Cápsulas', 'Blocos'];
 
-export function Header({ quantidadeCarrinho, onAbrirCarrinho }: Props) {
+export function Header({ quantidadeCarrinho, onAbrirCarrinho, auth, onEntrar, onSair }: Props) {
   const navigate = useNavigate();
   const [busca, setBusca] = useState('');
 
@@ -37,12 +41,20 @@ export function Header({ quantidadeCarrinho, onAbrirCarrinho }: Props) {
         <label className="sr" htmlFor="busca">Buscar</label>
         <input id="busca" placeholder="Buscar objetos" value={busca} onChange={(e) => setBusca(e.target.value)} />
       </form>
-      <Link className="iconbtn" to="/conta" aria-label="Minha conta">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
-        </svg>
-      </Link>
+      {auth.autenticado ? (
+        <>
+          <Link className="iconbtn" to="/conta" aria-label="Minha conta">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+            </svg>
+          </Link>
+          {auth.usuario?.nome && <span className="muted" data-testid="nome-usuario">{auth.usuario.nome}</span>}
+          <button className="btn-texto" type="button" onClick={onSair}>Sair</button>
+        </>
+      ) : (
+        <button className="btn-texto" type="button" onClick={onEntrar}>Entrar</button>
+      )}
       <button className="iconbtn" type="button" onClick={onAbrirCarrinho} aria-label={`Carrinho, ${quantidadeCarrinho} itens`}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
           <path d="M5 8h14l-1 12H6z" />
