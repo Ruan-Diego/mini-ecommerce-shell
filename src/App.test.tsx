@@ -268,12 +268,26 @@ describe('Login', () => {
     expect(falso.iniciarLogin).not.toHaveBeenCalled();
   });
 
-  it('/admin com papel cliente mostra "Acesso negado" e não monta o MFE', async () => {
+  it.each(['/admin', '/admin/pedidos'])('%s com papel cliente mostra a página 403 e não carrega o MFE', async (rota) => {
     remotosNoAr('admin');
-    definirCliente(criarClienteFalso(logado(['cliente'])));
-    renderizar('/admin');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Acesso negado');
+    definirCliente(criarClienteFalso(logado(['cliente'], 'Maria')));
+    renderizar(rota);
+    const titulo = await screen.findByRole('heading', { level: 1, name: 'Acesso negado' });
+    expect(titulo).toHaveFocus();
+    expect(screen.getByText(/Você entrou como Maria/)).toBeInTheDocument();
     expect(screen.queryByText('mfe admin em /admin')).not.toBeInTheDocument();
+    expect(loadRemote).not.toHaveBeenCalledWith('mfe_admin/App');
+  });
+
+  it('na página 403, "Voltar para a loja" leva ao catálogo e "Entrar com outra conta" sai da conta atual', async () => {
+    remotosNoAr('catalogo', 'admin');
+    const falso = criarClienteFalso(logado(['cliente']));
+    definirCliente(falso);
+    renderizar('/admin');
+    await userEvent.click(await screen.findByRole('button', { name: 'Entrar com outra conta' }));
+    expect(falso.sair).toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('link', { name: 'Voltar para a loja' }));
+    expect(await screen.findByText('mfe catalogo em /')).toBeInTheDocument();
   });
 
   it('/admin com papel admin abre o MFE', async () => {

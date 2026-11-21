@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { obterCliente, useAuth } from './index';
+import { AcessoNegado } from '../layout/AcessoNegado';
 
 interface Props {
   /** Se informado, além de logado o usuário precisa ter este papel (ex.: 'admin'). */
@@ -22,11 +23,7 @@ export function RotaProtegida({ papel, children }: Props) {
 
   if (!autenticado) return <p className="wrap muted" role="status">Redirecionando para o login…</p>;
   if (papel && !usuario?.papeis.includes(papel)) {
-    return (
-      <p className="wrap" role="alert">
-        Acesso negado. Esta área é restrita.
-      </p>
-    );
+    return <AcessoNegado nome={usuario?.nome} onTrocarConta={() => obterCliente().sair()} />;
   }
   return <>{children}</>;
 }
